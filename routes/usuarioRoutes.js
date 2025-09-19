@@ -5,6 +5,6 @@ const authService = require("../services/authService");
 const rolService = require("../services/rolService");
 
 router.post("/crearUsuario", UsuarioController.createUsuario);
-router.get("usuarios", authService, rolService(["administrador", "vecino"]), UsuarioController.getUsuarios);
+router.get("/verUsuarios", authService, rolService(["administrador", "vecino"]), UsuarioController.getUsuarios);
 
 module.exports = router;

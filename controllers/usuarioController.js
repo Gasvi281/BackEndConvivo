@@ -5,13 +5,15 @@ const createUsuario = async(req, res) => {
     try {
         const { nombreCompleto,
             correo,
-            password
+            password,
+            rol
         } = req.body;
 
         const usuario = await Usuario.create({
             nombreCompleto,
             correo, 
             password,
+            rol
         })
 
         console.log("Usuario creado con id: ", usuario.id);
