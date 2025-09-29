@@ -9,6 +9,12 @@ const createUsuario = async(req, res) => {
             rol
         } = req.body;
 
+        const existe = await Usuario.findOne({where: {correo}})
+
+        if(existe){
+            return res.status(400).json({error: "Correo ya existe"})
+        }
+
         const usuario = await Usuario.create({
             nombreCompleto,
             correo, 
@@ -35,10 +41,24 @@ const getUsuarios = async(req, res)=>{
     }
 }
 
+const getUsuarioByCorreo = async(req, res)=>{
+    try {
+        const {correo} = req.params
+        const usuario = await Usuario.findOne({where: {correo}})
+        if (!usuario){
+            return res.status(404).json({error: "Usuario no encontrado"})
+        }
+
+        return res.status(200).json(usuario)
+    } catch (error) {
+        return res.status(500).json({error: error.message})
+    }
+}
+
 const getUsuario = async (req, res)=> {
     try {
         const {id} = req.params;
-        const usuario = await Usuario.findByPK(id)
+        const usuario = await Usuario.findByPk(id)
         if (!usuario){
             return res.status(404).json({error: "Usuario no encontrado"})
         }
@@ -53,5 +73,6 @@ const getUsuario = async (req, res)=> {
 module.exports = {
     createUsuario,
     getUsuarios,
-    getUsuario
+    getUsuario,
+    getUsuarioByCorreo
 };

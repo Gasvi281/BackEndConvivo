@@ -8,5 +8,6 @@ const usuario = require("../models/usuario");
 router.post("/crearUsuario", UsuarioController.createUsuario);
 router.get("/verUsuarios", authService, rolService(["administrador", "vecino"]), UsuarioController.getUsuarios);
 router.get("/verUsuario/:id", authService, UsuarioController.getUsuario)
+router.get("/verUsuario/:correo", authService, UsuarioController.getUsuarioByCorreo)
 
 module.exports = router;
