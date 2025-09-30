@@ -1,6 +1,7 @@
 const { Usuario } = require("../models");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { enviarMail } = require("../services/emailService")
 
 const login = async(req, res) => {
     try {
@@ -31,4 +32,23 @@ const login = async(req, res) => {
     }
 }
 
-module.exports = { login }
+const enviarCorreoReset = async(req, res) =>{
+    const { correo } = req.body;
+
+    try {
+        const usuario = await Usuario.findOne({where: {correo}})
+        if(!usuario){
+            return res.status(404).json({message: "Usuario no encontrado"})
+        }
+
+        await enviarMail(usuario.correo, "Recuperacion de contraseña","", 
+            `<p>A continuacion se le da el link donde podra reestablecer su contraseña. 
+            No responda a este mensaje</p>`)
+
+        return res.status(200).json(usuario);
+    } catch (error) {
+        return res.status(500).json(error);
+    }
+}
+
+module.exports = { login, enviarCorreoReset }
