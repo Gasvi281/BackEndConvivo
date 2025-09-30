@@ -1,5 +1,7 @@
 const { json } = require("body-parser");
 const { Usuario } = require("../models");
+const bcrypt=require("bcryptjs")
+const { where } = require("sequelize");
 
 const createUsuario = async(req, res) => {
     try {
@@ -70,9 +72,31 @@ const getUsuario = async (req, res)=> {
     }
 }
 
+const changePassword = async (req, res)=> {
+    try{
+        const {correo}=req.params
+        const {newPassword}= req.body
+        const usuario= await Usuario.findOne({where: {correo}})
+
+        if (!usuario){
+            return res.status(404).json({error:"Usuario no encontrado"})
+        }
+
+        usuario.password = await bcrypt.hash(newPassword, 10)
+        await usuario.save()
+
+        return res.status(201).json(usuario)
+
+    } catch{
+        return res.status(500).json({error: error.message})
+    }
+
+} 
+
 module.exports = {
     createUsuario,
     getUsuarios,
     getUsuario,
-    getUsuarioByCorreo
+    getUsuarioByCorreo,
+    changePassword
 };

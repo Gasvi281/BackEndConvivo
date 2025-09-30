@@ -1,4 +1,6 @@
 const nodemailer = require("nodemailer");
+const path= require("path")
+const {nodemailerMjmlPlugin}= require ("nodemailer-mjml")
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -10,12 +12,16 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const enviarMail = async(to, subject, text, html) => {
+transporter.use('compile', nodemailerMjmlPlugin({
+    templateFolder: path.join(__dirname, '../templates')
+}))
+const enviarMail = async(to, subject,templateData = {}) => {
     const info = await transporter.sendMail({
         from: `"Convivo" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        html
+        templateName: 'baseEmail',
+        templateData
     });
 
     console.log("Correo enviado", info.messageId);

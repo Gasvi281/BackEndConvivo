@@ -34,6 +34,7 @@ const login = async(req, res) => {
 
 const enviarCorreoReset = async(req, res) =>{
     const { correo } = req.body;
+    
 
     try {
         const usuario = await Usuario.findOne({where: {correo}})
@@ -41,14 +42,21 @@ const enviarCorreoReset = async(req, res) =>{
             return res.status(404).json({message: "Usuario no encontrado"})
         }
 
-        await enviarMail(usuario.correo, "Recuperacion de contraseña","", 
-            `<p>A continuacion se le da el link donde podra reestablecer su contraseña. 
-            No responda a este mensaje</p>`)
+        const tokenReset=jwt.sign(
+            {id: usuario.id,
+            correo: usuario.correo}, process.env.JWT_SECRET,
+            { expiresIn: "10m"}
+        )
+
+        const resetLink=`http://localhost:4200/authentication/reset?token=${tokenReset}`
+
+        await enviarMail(usuario.correo, "Recuperacion de contraseña",{resetLink})
 
         return res.status(200).json(usuario);
     } catch (error) {
         return res.status(500).json(error);
     }
 }
+
 
 module.exports = { login, enviarCorreoReset }
