@@ -9,6 +9,6 @@ router.post("/crearUsuario", UsuarioController.createUsuario);
 router.get("/verUsuarios", authService, rolService(["administrador", "vecino"]), UsuarioController.getUsuarios);
 router.get("/verUsuario/:id", authService, UsuarioController.getUsuario)
 router.get("/verUsuario/:correo", authService, UsuarioController.getUsuarioByCorreo)
-router.patch("/password/:correo", UsuarioController.changePassword)
+router.patch("/password", UsuarioController.changePassword)
 
 module.exports = router;

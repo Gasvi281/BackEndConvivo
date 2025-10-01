@@ -58,5 +58,16 @@ const enviarCorreoReset = async(req, res) =>{
     }
 }
 
+const validarToken = async(req, res) => {
+    const {token} = req.query;
 
-module.exports = { login, enviarCorreoReset }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return res.status(200).json({ valido: true, message: "Token autorizado"})
+    } catch (error) {
+        return res.status(401).json({valid: false, message: "Token expirado"})
+    }
+}
+
+
+module.exports = { login, enviarCorreoReset, validarToken }

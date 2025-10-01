@@ -2,6 +2,7 @@ const { json } = require("body-parser");
 const { Usuario } = require("../models");
 const bcrypt=require("bcryptjs")
 const { where } = require("sequelize");
+const jwt = require("jsonwebtoken");
 
 const createUsuario = async(req, res) => {
     try {
@@ -74,9 +75,10 @@ const getUsuario = async (req, res)=> {
 
 const changePassword = async (req, res)=> {
     try{
-        const {correo}=req.params
+        const {token}=req.body
         const {newPassword}= req.body
-        const usuario= await Usuario.findOne({where: {correo}})
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const usuario= await Usuario.findOne({where: {correo: decoded.correo}})
 
         if (!usuario){
             return res.status(404).json({error:"Usuario no encontrado"})
@@ -85,10 +87,10 @@ const changePassword = async (req, res)=> {
         usuario.password = await bcrypt.hash(newPassword, 10)
         await usuario.save()
 
-        return res.status(201).json(usuario)
+        return res.status(200).json(usuario)
 
     } catch{
-        return res.status(500).json({error: error.message})
+        return res.status(400).json({error: "Token invalido o expirado"})
     }
 
 } 
