@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const UsuarioRoutes = require("./routes/usuarioRoutes");
 const AuthRoutes = require("./routes/authRoutes");
+const ConjuntoRoutes = require("./routes/conjuntoRoutes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use("/usuario", UsuarioRoutes);
 app.use("/auth", AuthRoutes);
+app.use("/conjunto", ConjuntoRoutes);
 
 const PORT = process.env.PORT || 3000;
 
