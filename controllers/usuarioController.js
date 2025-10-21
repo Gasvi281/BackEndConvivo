@@ -4,7 +4,6 @@ const { Admin } = require("../models");
 const { Vecino } = require("../models");
 const { Conjunto } = require("../models");
 const bcrypt=require("bcryptjs");
-const { where } = require("sequelize");
 const jwt = require("jsonwebtoken");
 
 const createUsuario = async(req, res) => {
@@ -54,7 +53,8 @@ const createUsuario = async(req, res) => {
             detalle = await Vecino.create({
                 id: usuario.id,
                 conjuntoId: conjuntoId,
-                numeroApartamento: numeroApartamento
+                numeroApartamento: numeroApartamento,
+                telefono: telefono
             }, { transaction: t})
 
             console.log("vecino creado con id: ", detalle.id);
@@ -104,7 +104,31 @@ const getUsuario = async (req, res)=> {
             return res.status(404).json({error: "Usuario no encontrado"})
         }
 
-        return res.status(200).json(usuario)
+        let detalle = null;
+
+        if(usuario.rol === "administrador"){
+            detalle = await Admin.findByPk(id, {
+                include: [
+                    {
+                        model: Conjunto,
+                        as: "conjunto",
+                        attibutes: ["nombreConjunto"],
+                    },
+                ],
+            })
+        } else {
+            detalle = await Vecino.findByPk(id, {
+                include: [
+                    {
+                        model: Conjunto,
+                        as: "conjunto",
+                        attibutes: ["nombreConjunto"],
+                    },
+                ],
+            })
+        }
+
+        return res.status(200).json({usuario, detalle})
     } catch (error) {
         return res.status(500).json({error: error.message})
 
