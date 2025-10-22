@@ -7,6 +7,8 @@ module.exports = (sequelize, DataTypes) => {
             Conjunto.hasOne(models.Admin, {foreignKey: "conjuntoId", as: "admin"})
 
             Conjunto.hasMany(models.Vecino, {foreignKey: "conjuntoId", as: "vecinos"})
+
+            Conjunto.hasMany(models.Espacio)
         }
     }
 
