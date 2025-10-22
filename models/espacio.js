@@ -1,10 +1,11 @@
 'use strict';
 const { Model, DataTypes } = require('sequelize');
+const bcrypt = require('bcryptjs'); 
 
 module.exports = (sequelize, DataTypes) => {
     class Espacio extends Model {
         static associate(models) {
-            Espacio.belongsTo(models.Conjunto, {  });
+            Espacio.belongsTo(models.Conjunto, { foreignKey: "conjuntoId", as: "conjunto" });
         }
     }
 

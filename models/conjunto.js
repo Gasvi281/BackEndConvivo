@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
 
             Conjunto.hasMany(models.Vecino, {foreignKey: "conjuntoId", as: "vecinos"})
 
-            Conjunto.hasMany(models.Espacio)
+            Conjunto.hasMany(models.Espacio, {foreignKey: "conjuntoId", as: "espacios"})
         }
     }
 
