@@ -2,7 +2,7 @@ const { json } = require("body-parser");
 const { Usuario, sequelize } = require("../models");
 const { Admin } = require("../models");
 const { Vecino } = require("../models");
-const { Conjunto, Espacio } = require("../models");
+const { Espacio } = require("../models");
 const bcrypt=require("bcryptjs");
 const { where } = require("sequelize");
 const jwt = require("jsonwebtoken");
@@ -19,7 +19,7 @@ const createEspacio = async(req, res) => {
             tiempoMaximo, 
         } = req.body;
 
-        const espacio = await Conjunto.create({
+        const espacio = await Espacio.create({
             nombre,
             descripcion,
             conjuntoId,

@@ -1,6 +1,5 @@
 'use strict';
-const { Model, DataTypes } = require('sequelize');
-const bcrypt = require('bcryptjs'); 
+const { Model, DataTypes } = require('sequelize'); 
 
 module.exports = (sequelize, DataTypes) => {
     class Espacio extends Model {
@@ -47,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
                     is: /^([01]\d|2[0-3]):([0-5]\d)$/i,
                 },
             },
-            diasHabilitado: {
+            diasHabilitados: {
                 type: DataTypes.JSON,
                 allowNull: false,
             },
