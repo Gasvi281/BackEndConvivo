@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
                     is: /^([01]\d|2[0-3]):([0-5]\d)$/i,
                 },
             },
-            diasHabilitado: {
+            diasHabilitados: {
                 type: DataTypes.JSON,
                 allowNull: false,
             },

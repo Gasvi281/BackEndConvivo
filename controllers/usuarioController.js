@@ -104,7 +104,31 @@ const getUsuario = async (req, res)=> {
             return res.status(404).json({error: "Usuario no encontrado"})
         }
 
-        return res.status(200).json(usuario)
+        let detalle = null;
+
+        if(usuario.rol === "administrador"){
+            detalle = await Admin.findByPk(id, {
+                include: [
+                    {
+                        model: Conjunto,
+                        as: "conjunto",
+                        attributes: ["nombreConjunto"],
+                    },
+                ],
+            })
+        } else {
+            detalle = await Vecino.findByPk(id, {
+                include: [
+                    {
+                        model: Conjunto,
+                        as: "conjunto",
+                        attibutes: ["nombreConjunto"],
+                    },
+                ],
+            })
+        }
+
+        return res.status(200).json({usuario, detalle})
     } catch (error) {
         return res.status(500).json({error: error.message})
 
