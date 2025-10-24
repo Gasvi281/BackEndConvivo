@@ -3,7 +3,7 @@ const { Usuario, sequelize } = require("../models");
 const { Admin } = require("../models");
 const { Vecino } = require("../models");
 const { Conjunto, Espacio } = require("../models");
-const bcrypt = require("bcryptjs");
+const bcrypt=require("bcryptjs");
 const { where } = require("sequelize");
 const jwt = require("jsonwebtoken");
 

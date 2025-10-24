@@ -2,13 +2,14 @@
 const { Model, DataTypes } = require('sequelize'); 
 
 module.exports = (sequelize, DataTypes) => {
-    class Espacio extends Model {
+    class EspacioReservado extends Model {
         static associate(models) {
-            Espacio.belongsTo(models.Conjunto, { foreignKey: "conjuntoId", as: "conjunto" });
+            EspacioReservado.belongsTo(models.Espacio, { foreignKey: "espacioId", as: "espacio" });
+            EspacioReservado.belongsTo(models.Reserva, { foreignKey: "reservaId", as: "reserva" })
         }
     }
 
-    Espacio.init( //Nombre, hora inicio, hora fin, dias habilitados, estado del espacio, cantidad de personas, tiempo maximo
+    EspacioReservado.init(
         {
             id: {
                 type: DataTypes.UUID,
@@ -16,21 +17,17 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 primaryKey: true,
             },
-            nombre: {
-                type: DataTypes.STRING,
-                allowNull: false,
-            },
-            descripcion: {
-                type: DataTypes.STRING,
-                allowNull: false,
-            },
-            conjuntoId: {
+            usuarioId: {
                 type: DataTypes.UUID,
                 allowNull: false,
                 references: {
-                    model: "Conjunto",
+                    model: "Usuario",
                     key: "id",
                 },
+            },
+            fecha: {
+                type: DataTypes.STRING,
+                allowNull: false,
             },
             horaInicio: {
                 type: DataTypes.STRING,
@@ -46,31 +43,19 @@ module.exports = (sequelize, DataTypes) => {
                     is: /^([01]\d|2[0-3]):([0-5]\d)$/i,
                 },
             },
-            diasHabilitados: {
-                type: DataTypes.JSON,
-                allowNull: false,
-            },
-            estadoEspacio: {
+            estado: {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: "Activo"
             },
-            cantidadPersonas: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            },
-            tiempoMaximo: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            }
         },
         {
             sequelize,
-            modelName: "Espacio",
-            tableName: "Espacios",
+            modelName: "Reserva",
+            tableName: "Reservas",
             timestamps: true,
         }
     );
 
-    return Espacio;
+    return EspacioReservado;
 };
