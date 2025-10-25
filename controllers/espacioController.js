@@ -67,6 +67,22 @@ const getEspaciosByConjuntoId = async (req, res) => {
     }
 }
 
+const getEspaciosActivosByConjuntoId = async (req, res) => {
+    try {
+        const { conjuntoId } = req.params
+
+        const espaciosActivosConjunto = await Espacio.findAll({ where: { conjuntoId, estadoEspacio: 'Activo' } })
+
+        if (!espaciosActivosConjunto) {
+            return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene espacios" })
+        }
+
+        return res.status(200).json(espaciosActivosConjunto);
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
 const getEspacioById = async (req, res) => {
     try {
         const { id } = req.params
@@ -87,5 +103,6 @@ module.exports = {
     createEspacio,
     getEspacios,
     getEspaciosByConjuntoId,
+    getEspaciosActivosByConjuntoId,
     getEspacioById
 };
