@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Reserva extends Model {
         static associate(models) {
             Reserva.belongsTo(models.Usuario, { foreignKey: "usuarioId", as: "usuario" });
+            Reserva.belongsTo(models.Espacio, { foreignKey: "espacioId", as: "espacio" });
         }
     }
 
@@ -21,6 +22,14 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 references: {
                     model: "Usuario",
+                    key: "id",
+                },
+            },
+            espacioId: {
+                type: DataTypes.UUID,
+                allowNull: false,
+                references: {
+                    model: "Espacio",
                     key: "id",
                 },
             },
@@ -41,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
                 validate: {
                     is: /^([01]\d|2[0-3]):([0-5]\d)$/i,
                 },
+            },
+            cantidadPersonas: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
             },
             estado: {
                 type: DataTypes.STRING,
