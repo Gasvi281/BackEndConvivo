@@ -4,6 +4,7 @@ const EspacioController = require("../controllers/espacioController");
 
 router.post("/create", EspacioController.createEspacio);
 router.get("/get", EspacioController.getEspacios);
-router.get("/get/:id", EspacioController.getEspacioById)
+router.get("/getUno/:id", EspacioController.getEspacioById)
+router.get("/get/:conjuntoId", EspacioController.getEspaciosByConjuntoId)
 
 module.exports = router;

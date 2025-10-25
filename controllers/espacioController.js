@@ -2,12 +2,14 @@ const { json } = require("body-parser");
 const { Usuario, sequelize } = require("../models");
 const { Admin } = require("../models");
 const { Vecino } = require("../models");
-const { Espacio } = require("../models");
+const { Conjunto, Espacio } = require("../models");
 const bcrypt=require("bcryptjs");
 const { where } = require("sequelize");
 const jwt = require("jsonwebtoken");
 
-const createEspacio = async(req, res) => {
+const createEspacio = async (req, res) => {
+    console.log('BODY RECIBIDO:', req.body);
+
     try {
         const { nombre,
             descripcion,
@@ -16,7 +18,8 @@ const createEspacio = async(req, res) => {
             horaFin,
             diasHabilitados,
             cantidadPersonas,
-            tiempoMaximo, 
+            tiempoMaximo,
+            estadoEspacio
         } = req.body;
 
         const espacio = await Espacio.create({
@@ -28,6 +31,7 @@ const createEspacio = async(req, res) => {
             diasHabilitados,
             cantidadPersonas,
             tiempoMaximo,
+            estadoEspacio
         });
 
         return res.status(201).json(espacio);
@@ -43,24 +47,45 @@ const getEspacios = async (req, res) => {
 
         return res.status(200).json(espacios);
     } catch (error) {
-        return res.status(404).json({error: "Espacios no encontrados"})
+        return res.status(404).json({ error: "Espacios no encontrados" })
+    }
+}
+
+const getEspaciosByConjuntoId = async (req, res) => {
+    try {
+        const { conjuntoId } = req.params
+
+        const espaciosConjunto = await Espacio.findAll({ where: { conjuntoId } })
+
+        if (!espaciosConjunto) {
+            return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene espacios" })
+        }
+
+        return res.status(200).json(espaciosConjunto);
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
     }
 }
 
 const getEspacioById = async (req, res) => {
-        const {id} = req.params
+    try {
+        const { id } = req.params
 
-        const espacio = await Espacio.findOne({where: {id}})
+        const espacio = await Espacio.findOne({ where: { id } })
 
-        if(!espacio){
-            return res.tatus(404).json({error: "No existe este espacio"})
+        if (!espacio) {
+            return res.status(404).json({ error: "No existe este espacio" })
         }
 
-        return res.status(200).json(espacio); 
+        return res.status(200).json(espacio);
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
 }
 
 module.exports = {
     createEspacio,
     getEspacios,
+    getEspaciosByConjuntoId,
     getEspacioById
 };
