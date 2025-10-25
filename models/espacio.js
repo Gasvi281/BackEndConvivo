@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Espacio extends Model {
         static associate(models) {
             Espacio.belongsTo(models.Conjunto, { foreignKey: "conjuntoId", as: "conjunto" });
+            Espacio.hasMany(models.Reserva, { foreignKey: "espacioId", as: "reserva" })
         }
     }
 

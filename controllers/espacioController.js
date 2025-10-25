@@ -56,7 +56,7 @@ const getEspacioById = async (req, res) => {
             return res.tatus(404).json({error: "No existe este espacio"})
         }
 
-        return res.status(200).json(espacios); 
+        return res.status(200).json(espacio); 
 }
 
 module.exports = {
