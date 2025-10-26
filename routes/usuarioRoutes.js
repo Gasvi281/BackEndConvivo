@@ -10,5 +10,6 @@ router.get("/verUsuarios", authService, rolService(["administrador", "vecino"]),
 router.get("/verUsuario/:id", authService, UsuarioController.getUsuario)
 router.get("/verUsuario/:correo", authService, UsuarioController.getUsuarioByCorreo)
 router.patch("/password", UsuarioController.changePassword)
-
+router.patch("/updateV/:id", UsuarioController.updateUsuarioVecino);
+router.patch("/updateA/:id", UsuarioController.updateUsuarioAdmin);
 module.exports = router;
