@@ -112,7 +112,7 @@ const getUsuario = async (req, res)=> {
                     {
                         model: Conjunto,
                         as: "conjunto",
-                        attibutes: ["nombreConjunto"],
+                        attributes: ["nombreConjunto"],
                     },
                 ],
             })

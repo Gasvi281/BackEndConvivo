@@ -8,6 +8,8 @@ module.exports = (sequelize, DataTypes) => {
             Usuario.hasOne(models.Admin, { foreignKey: "id", as: "admin"})
 
             Usuario.hasOne(models.Vecino, { foreignKey: "id", as: "vecino"})
+
+            Usuario.hasOne(models.Reserva, { foreignKey: "usuarioId", as: "reserva" })
         }
     }
 

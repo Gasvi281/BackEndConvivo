@@ -7,6 +7,8 @@ const bodyParser = require("body-parser");
 const UsuarioRoutes = require("./routes/usuarioRoutes");
 const AuthRoutes = require("./routes/authRoutes");
 const ConjuntoRoutes = require("./routes/conjuntoRoutes");
+const EspacioRoutes = require("./routes/espacioRoutes")
+const ReservaRoutes = require("./routes/reservaRoutes")
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use("/usuario", UsuarioRoutes);
 app.use("/auth", AuthRoutes);
 app.use("/conjunto", ConjuntoRoutes);
+app.use("/espacio", EspacioRoutes)
+app.use("/reserva", ReservaRoutes)
 
 const PORT = process.env.PORT || 3000;
 
