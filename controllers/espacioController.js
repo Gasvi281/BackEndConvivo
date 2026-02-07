@@ -99,10 +99,39 @@ const getEspacioById = async (req, res) => {
     }
 }
 
+const updateEspacio = async (req,res) => {
+    try {
+        const {conjuntoId} = req.params
+        const {nombre, descripcion, horaInicio, horaFin, diasHabilitados, estadoEspacio, cantidadPersonas, tiempoMaximo} = req.body;
+
+        const espacio = await Espacio.findByPk(conjuntoId);
+        if(!espacio){
+            return res.status(404).json({ message: "Reserva no encontrada"});
+        }
+
+        if(nombre) espacio.nombre = nombre
+        if(descripcion) espacio.descripcion = descripcion
+        if(horaInicio) espacio.horaInicio = horaInicio
+        if(horaFin) espacio.horaFin = horaFin
+        if(diasHabilitados) espacio.diasHabilitados = diasHabilitados
+        if(estadoEspacio) espacio.estadoEspacio = estadoEspacio
+        if(cantidadPersonas) espacio.cantidadPersonas = cantidadPersonas
+        if(tiempoMaximo) espacio.tiempoMaximo = tiempoMaximo
+
+        await espacio.save();
+
+        return res.status(200).json({message: "Espacio actualizado correctamente"})
+    } catch (error) {
+        console.error('Error al actualizar espacio: ', error);
+        return res.status(500).json({error: error.message});
+    }
+}
+
 module.exports = {
     createEspacio,
     getEspacios,
     getEspaciosByConjuntoId,
     getEspaciosActivosByConjuntoId,
-    getEspacioById
+    getEspacioById,
+    updateEspacio
 };

@@ -7,5 +7,6 @@ router.get("/get", EspacioController.getEspacios);
 router.get("/getUno/:id", EspacioController.getEspacioById)
 router.get("/get/:conjuntoId", EspacioController.getEspaciosByConjuntoId)
 router.get("/getActive/:conjuntoId", EspacioController.getEspaciosActivosByConjuntoId)
+router.put("/update/:conjuntoId", EspacioController.updateEspacio)
 
 module.exports = router;
