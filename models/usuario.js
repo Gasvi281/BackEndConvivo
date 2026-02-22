@@ -10,6 +10,10 @@ module.exports = (sequelize, DataTypes) => {
             Usuario.hasOne(models.Vecino, { foreignKey: "id", as: "vecino"})
 
             Usuario.hasOne(models.Reserva, { foreignKey: "usuarioId", as: "reserva" })
+            
+            Usuario.hasMany(models.Comentario, { foreignKey: "usuarioId", as: "comentario"})
+
+            Usuario.hasMany(models.Comentario, { foreignKey: "usuarioLigado", as: "comentarioLigado"})
         }
     }
 
