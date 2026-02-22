@@ -12,4 +12,5 @@ router.get("/verUsuario/:correo", authService, UsuarioController.getUsuarioByCor
 router.patch("/password", UsuarioController.changePassword)
 router.patch("/updateV/:id", UsuarioController.updateUsuarioVecino);
 router.patch("/updateA/:id", UsuarioController.updateUsuarioAdmin);
+router.get("/verUsuarios/:conjunto")
 module.exports = router;
