@@ -71,7 +71,13 @@ const getComentariosByUsuarioId = async (req, res) => {
     try {
         const { usuarioId } = req.params
 
-        const comentarios = await Comentario.findAll({ where: { usuarioId } })
+        const comentarios = await Comentario.findAll({ where: { usuarioId },
+        include: [
+        {
+          model: Usuario,
+          as: 'Ligado'
+        }
+      ]})
 
         if (!comentarios) {
             return res.status(404).json({ error: "El id es erroneo o el usuario no tiene comentarios" })
