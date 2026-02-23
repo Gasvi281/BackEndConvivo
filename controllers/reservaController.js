@@ -89,6 +89,38 @@ const getReservasByUsuarioId = async (req, res) => {
     }
 }
 
+const getReservasPasadas = async (req, res) => {
+    try {
+        const {usuarioId} = req.params
+
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0)
+
+        const reservas = await Reserva.findAll({ where: { 
+            usuarioId, 
+            fecha: {
+                [Op.lt]: hoy
+            }, 
+        }, include: [
+                {
+                    model: Espacio,
+                    as: "espacio",
+                    attributes: ["nombre","descripcion"],
+                },
+            ],
+            order: [['fecha', 'ASC']]
+    });
+
+    if(!reservas){
+        return res.status(404).json({error: "Este usuario no tiene reservas"})
+    }
+
+        return res.status(200).json(reservas)
+    } catch (error) {
+        return res.status(500).json({error: error.message})
+    }
+}
+
 const deleteReserva = async (req,res) => {
     try {
         const {id} = req.params
@@ -137,6 +169,7 @@ module.exports = {
     getReservas,
     getReservaById,
     getReservasByUsuarioId,
+    getReservasPasadas,
     deleteReserva,
     updateReserva
 };
