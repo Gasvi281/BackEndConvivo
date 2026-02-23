@@ -221,6 +221,22 @@ const updateUsuarioAdmin = async(req, res) => {
     }
 }
 
+const getVecinosByConjuntoId = async(req, res) => {
+    try{
+        const {conjunto} = req.params
+
+        const vecinos = await Vecino.findAll({ where: { conjunto } })
+
+        if (!vecinos) {
+            return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene vecinos" })
+        }
+
+        return res.status(200).json(vecinos);
+    }catch(error){
+        return res.status(500).json({ error: error.message })
+    }
+}
+
 module.exports = {
     createUsuario,
     getUsuarios,
@@ -228,5 +244,6 @@ module.exports = {
     getUsuarioByCorreo,
     changePassword,
     updateUsuarioVecino,
-    updateUsuarioAdmin
+    updateUsuarioAdmin,
+    getVecinosByConjuntoId
 };

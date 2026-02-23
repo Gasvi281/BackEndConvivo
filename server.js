@@ -9,6 +9,7 @@ const AuthRoutes = require("./routes/authRoutes");
 const ConjuntoRoutes = require("./routes/conjuntoRoutes");
 const EspacioRoutes = require("./routes/espacioRoutes")
 const ReservaRoutes = require("./routes/reservaRoutes")
+const ComentarioRoutes = require("./routes/comentarioRoutes")
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/auth", AuthRoutes);
 app.use("/conjunto", ConjuntoRoutes);
 app.use("/espacio", EspacioRoutes)
 app.use("/reserva", ReservaRoutes)
+app.use("/comentario", ComentarioRoutes)
 
 const PORT = process.env.PORT || 3000;
 
