@@ -225,13 +225,17 @@ const getVecinosByConjuntoId = async(req, res) => {
     try{
         const {conjunto} = req.params
 
-        const vecinos = await Vecino.findAll({ where: { conjunto } })
+        const usuarios = await Vecino.findAll({ where: { conjunto } })
 
-        if (!vecinos) {
+        let detalle = null
+
+        detalle = await Vecino.findAll({ where: { conjunto } })
+
+        if (!usuarios) {
             return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene vecinos" })
         }
 
-        return res.status(200).json(vecinos);
+        return res.status(200).json(usuarios, detalle);
     }catch(error){
         return res.status(500).json({ error: error.message })
     }
