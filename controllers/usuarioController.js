@@ -3,10 +3,10 @@ const { Usuario, sequelize } = require("../models");
 const { Admin } = require("../models");
 const { Vecino } = require("../models");
 const { Conjunto } = require("../models");
-const bcrypt=require("bcryptjs");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const createUsuario = async(req, res) => {
+const createUsuario = async (req, res) => {
     const t = await sequelize.transaction();
     try {
         const { nombreCompleto,
@@ -19,52 +19,52 @@ const createUsuario = async(req, res) => {
 
         const existeC = await Conjunto.findByPk(conjuntoId);
 
-        if(!existeC){
-            return res.status(404).json({error: "Este conjunto no existe"})
+        if (!existeC) {
+            return res.status(404).json({ error: "Este conjunto no existe" })
         }
 
         const numeroApartamento = req.body.numeroApartamento || '';
         const telefono = req.body.telefono || '';
 
-        const existe = await Usuario.findOne({where: {correo}})
+        const existe = await Usuario.findOne({ where: { correo } })
 
-        if(existe){
-            return res.status(400).json({error: "Correo ya existe"})
+        if (existe) {
+            return res.status(400).json({ error: "Correo ya existe" })
         }
 
         const usuario = await Usuario.create({
             nombreCompleto,
-            correo, 
+            correo,
             password,
             rol
-        }, { transaction: t});
+        }, { transaction: t });
 
         let detalle = null;
 
-        if(usuario.rol === "administrador"){
+        if (usuario.rol === "administrador") {
             detalle = await Admin.create({
                 id: usuario.id,
                 conjuntoId: conjuntoId,
                 telefono: telefono
-            }, { transaction: t})
+            }, { transaction: t })
 
             console.log("administrador creado con id: ", detalle.id);
-        } else{
+        } else {
             detalle = await Vecino.create({
                 id: usuario.id,
                 conjuntoId: conjuntoId,
                 numeroApartamento: numeroApartamento,
                 telefono: telefono
-            }, { transaction: t})
+            }, { transaction: t })
 
             console.log("vecino creado con id: ", detalle.id);
-            
+
         }
 
         console.log("Usuario creado con id: ", usuario.id);
 
         await t.commit();
-        return res.status(201).json({usuario, detalle });
+        return res.status(201).json({ usuario, detalle });
     } catch (error) {
         await t.rollback();
         console.log("Error agregando el usuario", error);
@@ -72,41 +72,41 @@ const createUsuario = async(req, res) => {
     }
 }
 
-const getUsuarios = async(req, res)=>{
+const getUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.findAll();
-        
+
         return res.status(200).json(usuarios);
     } catch (error) {
-        return res.status(404).json({error: "usuarios no encontrados"})
+        return res.status(404).json({ error: "usuarios no encontrados" })
     }
 }
 
-const getUsuarioByCorreo = async(req, res)=>{
+const getUsuarioByCorreo = async (req, res) => {
     try {
-        const {correo} = req.params
-        const usuario = await Usuario.findOne({where: {correo}})
-        if (!usuario){
-            return res.status(404).json({error: "Usuario no encontrado"})
+        const { correo } = req.params
+        const usuario = await Usuario.findOne({ where: { correo } })
+        if (!usuario) {
+            return res.status(404).json({ error: "Usuario no encontrado" })
         }
 
         return res.status(200).json(usuario)
     } catch (error) {
-        return res.status(500).json({error: error.message})
+        return res.status(500).json({ error: error.message })
     }
 }
 
-const getUsuario = async (req, res)=> {
+const getUsuario = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
         const usuario = await Usuario.findByPk(id)
-        if (!usuario){
-            return res.status(404).json({error: "Usuario no encontrado"})
+        if (!usuario) {
+            return res.status(404).json({ error: "Usuario no encontrado" })
         }
 
         let detalle = null;
 
-        if(usuario.rol === "administrador"){
+        if (usuario.rol === "administrador") {
             detalle = await Admin.findByPk(id, {
                 include: [
                     {
@@ -128,22 +128,22 @@ const getUsuario = async (req, res)=> {
             })
         }
 
-        return res.status(200).json({usuario, detalle})
+        return res.status(200).json({ usuario, detalle })
     } catch (error) {
-        return res.status(500).json({error: error.message})
+        return res.status(500).json({ error: error.message })
 
     }
 }
 
-const changePassword = async (req, res)=> {
-    try{
-        const {token}=req.body
-        const {newPassword}= req.body
+const changePassword = async (req, res) => {
+    try {
+        const { token } = req.body
+        const { newPassword } = req.body
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const usuario= await Usuario.findOne({where: {correo: decoded.correo}})
+        const usuario = await Usuario.findOne({ where: { correo: decoded.correo } })
 
-        if (!usuario){
-            return res.status(404).json({error:"Usuario no encontrado"})
+        if (!usuario) {
+            return res.status(404).json({ error: "Usuario no encontrado" })
         }
 
         usuario.password = await bcrypt.hash(newPassword, 10)
@@ -151,73 +151,124 @@ const changePassword = async (req, res)=> {
 
         return res.status(200).json(usuario)
 
-    } catch{
-        return res.status(400).json({error: "Token invalido o expirado"})
+    } catch {
+        return res.status(400).json({ error: "Token invalido o expirado" })
     }
 
 }
 
-const updateUsuarioVecino = async (req, res)=> {
+const updateUsuarioVecino = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
         const { nombreCompleto, correo, conjuntoId, numeroApartamento, telefono } = req.body;
 
         const usuario = await Usuario.findByPk(id);
-        if(!usuario){
-            return res.status(404).json({ message: "Usuario no encontrado"});
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
         }
 
-        if(nombreCompleto) usuario.nombreCompleto = nombreCompleto;
-        if(correo) usuario.correo = correo;
+        if (nombreCompleto) usuario.nombreCompleto = nombreCompleto;
+        if (correo) usuario.correo = correo;
 
         await usuario.save();
 
         const vecino = await Vecino.findByPk(id);
-        if(!vecino){
-            return res.status(404).json({ message: "Vecino no encontrado"})
+        if (!vecino) {
+            return res.status(404).json({ message: "Vecino no encontrado" })
         }
 
-        if(conjuntoId) vecino.conjuntoId = conjuntoId;
-        if(telefono) vecino.telefono = telefono;
-        if(numeroApartamento) vecino.numeroApartamento = numeroApartamento;
+        if (conjuntoId) vecino.conjuntoId = conjuntoId;
+        if (telefono) vecino.telefono = telefono;
+        if (numeroApartamento) vecino.numeroApartamento = numeroApartamento;
 
         await vecino.save();
 
-        return res.status(200).json({message: "Vecino actualizado correctamente"})
+        return res.status(200).json({ message: "Vecino actualizado correctamente" })
     } catch (error) {
         console.error('Error al actualizar vecino: ', error);
-        return res.status(500).json({error: error.message});
+        return res.status(500).json({ error: error.message });
     }
 }
 
-const updateUsuarioAdmin = async(req, res) => {
+const updateUsuarioAdmin = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
         const { nombreCompleto, correo, telefono } = req.body;
 
         const usuario = await Usuario.findByPk(id);
-        if(!usuario){
-            return res.status(404).json({ message: "Usuario no encontrado"});
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
         }
 
-        if(nombreCompleto) usuario.nombreCompleto = nombreCompleto;
-        if(correo) usuario.correo = correo;
+        if (nombreCompleto) usuario.nombreCompleto = nombreCompleto;
+        if (correo) usuario.correo = correo;
 
         await usuario.save();
 
         const admin = await Admin.findByPk(id);
-        if(!admin){
-            return res.status(404).json({ message: "Admin no encontrado"})
+        if (!admin) {
+            return res.status(404).json({ message: "Admin no encontrado" })
         }
 
-        if(telefono) admin.telefono = telefono;
+        if (telefono) admin.telefono = telefono;
 
         await admin.save();
 
-        return res.status(200).json({message: "Admin actualizado correctamente"})
+        return res.status(200).json({ message: "Admin actualizado correctamente" })
     } catch (error) {
         console.error('Error al actualizar admin: ', error);
-        return res.status(500).json({error: error.message});
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+const getVecinosByConjuntoId = async (req, res) => {
+    try {
+        const { conjunto } = req.params
+
+        // const usuarios = await Usuario.findAll({ where: { rol: 'vecino' } })
+
+        const usuarios = await Vecino.findAll({
+            where: { conjuntoId: conjunto }, include: [
+                {
+                    model: Usuario,
+                    as: "usuario",
+                },
+            ],
+        })
+
+        if (!usuarios) {
+            return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene vecinos" })
+        }
+
+        return res.status(200).json(usuarios);
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+}
+
+const getVecinosByConjunto = async (req, res) => {
+    try {
+        const { conjunto } = req.params
+
+        // const usuarios = await Usuario.findAll({ where: { rol: 'vecino' } })
+
+        const usuarios = await Usuario.findAll({
+            include: [
+                {
+                    model: Vecino,
+                    as: "vecino",
+                    where: { conjuntoId: conjunto },
+                },
+            ],
+        });
+
+        if (!usuarios) {
+            return res.status(404).json({ error: "El id es erroneo o el conjunto no tiene vecinos" })
+        }
+
+        return res.status(200).json(usuarios);
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
     }
 }
 
@@ -228,5 +279,7 @@ module.exports = {
     getUsuarioByCorreo,
     changePassword,
     updateUsuarioVecino,
-    updateUsuarioAdmin
+    updateUsuarioAdmin,
+    getVecinosByConjuntoId,
+    getVecinosByConjunto
 };
