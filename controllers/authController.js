@@ -1,4 +1,4 @@
-const { Usuario } = require("../models");
+const Usuario = require("../schemas/usuario");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { enviarMail } = require("../services/emailService")
@@ -7,7 +7,7 @@ const login = async(req, res) => {
     try {
         const {correo, password} = req.body;
 
-        const usuario = await Usuario.findOne({where: {correo}})
+        const usuario = await Usuario.findOne({correo})
         
         if(!usuario){
             return res.status(404).json({error: "Usuario no encontrado"})
@@ -37,7 +37,7 @@ const enviarCorreoReset = async(req, res) =>{
     
 
     try {
-        const usuario = await Usuario.findOne({where: {correo}})
+        const usuario = await Usuario.findOne({correo})
         if(!usuario){
             return res.status(404).json({message: "Usuario no encontrado"})
         }
@@ -52,7 +52,7 @@ const enviarCorreoReset = async(req, res) =>{
 
         await enviarMail(usuario.correo, "Recuperacion de contraseña",{resetLink})
 
-        return res.status(200).json(usuario);
+        return res.status(200).json({usuario, tokenReset});
     } catch (error) {
         return res.status(500).json(error);
     }
