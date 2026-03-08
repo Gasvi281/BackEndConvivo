@@ -3,15 +3,12 @@ const router = express.Router();
 const UsuarioController = require("../controllers/usuarioController");
 const authService = require("../services/authService");
 const rolService = require("../services/rolService");
-const usuario = require("../models/usuario");
 
 router.post("/crearUsuario", UsuarioController.createUsuario);
 router.get("/verUsuarios", authService, rolService(["administrador", "vecino"]), UsuarioController.getUsuarios);
 router.get("/verUsuario/:id", authService, UsuarioController.getUsuario)
-router.get("/verUsuario/:correo", authService, UsuarioController.getUsuarioByCorreo)
 router.patch("/password", UsuarioController.changePassword)
-router.patch("/updateV/:id", UsuarioController.updateUsuarioVecino);
-router.patch("/updateA/:id", UsuarioController.updateUsuarioAdmin);
-router.get("/verUsuarios/:conjunto", UsuarioController.getVecinosByConjuntoId)
-router.get("/verUsuariosConjunto/:conjunto", UsuarioController.getVecinosByConjunto)
+router.patch("/updateV/:id", authService, UsuarioController.updateUsuarioVecino);
+router.patch("/updateA/:id", authService, UsuarioController.updateUsuarioAdmin);
+router.get("/verUsuariosConjunto/:conjunto", authService, UsuarioController.getVecinosByConjunto)
 module.exports = router;
