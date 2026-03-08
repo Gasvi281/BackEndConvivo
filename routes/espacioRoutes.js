@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const EspacioController = require("../controllers/espacioController");
+const authService = require("../services/authService");
 
-router.post("/create", EspacioController.createEspacio);
-router.get("/get", EspacioController.getEspacios);
-router.get("/getUno/:id", EspacioController.getEspacioById)
-router.get("/get/:conjuntoId", EspacioController.getEspaciosByConjuntoId)
-router.get("/getActive/:conjuntoId", EspacioController.getEspaciosActivosByConjuntoId)
-router.put("/update/:conjuntoId", EspacioController.updateEspacio)
+router.post("/create", authService, EspacioController.createEspacio);
+router.get("/get", authService, EspacioController.getEspacios);
+router.get("/getUno/:id", authService, EspacioController.getEspacioById)
+router.get("/get/:conjuntoId", authService, EspacioController.getEspaciosByConjuntoId)
+router.get("/getActive/:conjuntoId", authService, EspacioController.getEspaciosActivosByConjuntoId)
+router.put("/update/:id", authService, EspacioController.updateEspacio)
 
 module.exports = router;

@@ -1,35 +1,29 @@
-const { Conjunto } = require("../models");
+const Conjunto = require("../schemas/conjunto");
 
 const createConjunto = async (req, res) => {
-    try {
-        const { nombreConjunto,
-            direccion,
-            ciudad, 
-            numeroApartamentos
-        } = req.body;
+  try {
+    const { nombreConjunto, direccion, ciudad, numeroApartamentos } = req.body;
 
-        const conjunto = await Conjunto.create({
-            nombreConjunto,
-            direccion,
-            ciudad,
-            numeroApartamentos
-        });
+    const conjunto = await Conjunto.create({
+      nombreConjunto,
+      direccion,
+      ciudad,
+      numeroApartamentos,
+    });
 
-        return res.status(201).json(conjunto);
-    } catch (error) {
-        console.log("Error creando el conjunto", error);
-        return res.status(500).json({ error: error.message || error.toString() })
-    }
-}
+    return res.status(201).json(conjunto);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const getConjuntos = async (req, res) => {
-    try {
-        const conjuntos = await Conjunto.findAll();
+  try {
+    const conjuntos = await Conjunto.find();
+    return res.status(200).json(conjuntos);
+  } catch (error) {
+    return res.status(404).json({ error: "Conjuntos no encontrados" });
+  }
+};
 
-        return res.status(200).json(conjuntos);
-    } catch (error) {
-        return res.status(404).json({error: "Conjuntos no encontrados"})
-    }
-}
-
-module.exports = { createConjunto, getConjuntos}
+module.exports = { createConjunto, getConjuntos };

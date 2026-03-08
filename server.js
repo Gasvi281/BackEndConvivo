@@ -4,6 +4,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
+const connectDB = require("./config/mongoose");
+
 const UsuarioRoutes = require("./routes/usuarioRoutes");
 const AuthRoutes = require("./routes/authRoutes");
 const ConjuntoRoutes = require("./routes/conjuntoRoutes");
@@ -12,6 +14,8 @@ const ReservaRoutes = require("./routes/reservaRoutes")
 const ComentarioRoutes = require("./routes/comentarioRoutes")
 
 const app = express();
+
+connectDB();
 
 app.use(cors());
 app.use(helmet());
