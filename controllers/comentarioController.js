@@ -1,97 +1,64 @@
-const { json } = require("body-parser");
-const { Usuario, sequelize } = require("../models");
-const { Admin } = require("../models");
-const { Vecino } = require("../models");
-const { Comentario } = require("../models");
-const { Espacio } = require("../models");
-const bcrypt=require("bcryptjs");
-const { where } = require("sequelize");
-const jwt = require("jsonwebtoken");
-const { Op } = require('sequelize');
+const Comentario = require("../schemas/comentario");
+const Usuario = require("../schemas/usuario");
 
-const createComentario = async(req, res) => {
-    try {
-        const { descripcion,
-            asunto,
-            usuarioId,
-            usuarioLigado,
-        } = req.body;
+const createComentario = async (req, res) => {
+  try {
+    const { descripcion, asunto, usuarioId, usuarioLigado } = req.body;
 
-        let comentario = null
+    const comentario = await Comentario.create({
+      descripcion,
+      asunto,
+      usuarioId,
+      usuarioLigado,
+    });
 
-        if(usuarioLigado){
-
-            comentario = await Comentario.create({
-            descripcion,
-            asunto,
-            usuarioId,
-            usuarioLigado,
-        });
-
-        } else {
-
-            comentario = await Comentario.create({
-            descripcion,
-            asunto,
-            usuarioId,
-        });
-
-        }
-
-        return res.status(201).json(comentario);
-    } catch (error) {
-        console.log("Error creando comentario", error);
-        return res.status(500).json({ error: error.message || error.toString() })
-    }
-}
+    return res.status(201).json(comentario);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const getComentarios = async (req, res) => {
-    try {
-        const comentarios = await Comentario.findAll();
-
-        return res.status(200).json(comentarios);
-    } catch (error) {
-        return res.status(404).json({error: "Comentarios no encontrados"})
+  try {
+    const comentarios = await Comentario.find();
+    if (!comentarios.length) {
+      return res.status(404).json({ error: "Comentarios no encontrados" });
     }
-}
+    return res.status(200).json(comentarios);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const getComentarioById = async (req, res) => {
-        const {id} = req.params
-
-        const comentario = await Comentario.findOne({where: {id}})
-
-        if(!comentario){
-            return res.status(404).json({error: "No existe este comentario"})
-        }
-
-        return res.status(200).json(comentario); 
-}
+  try {
+    const { id } = req.params;
+    const comentario = await Comentario.findById(id);
+    if (!comentario) {
+      return res.status(404).json({ error: "No existe este comentario" });
+    }
+    return res.status(200).json(comentario);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 const getComentariosByUsuarioId = async (req, res) => {
-    try {
-        const { usuarioId } = req.params
-
-        const comentarios = await Comentario.findAll({ where: { usuarioId },
-        include: [
-        {
-          model: Usuario,
-          as: 'Ligado'
-        }
-      ]})
-
-        if (!comentarios) {
-            return res.status(404).json({ error: "El id es erroneo o el usuario no tiene comentarios" })
-        }
-
-        return res.status(200).json(comentarios);
-    } catch (error) {
-        return res.status(500).json({ error: error.message })
+  try {
+    const { usuarioId } = req.params;
+    const comentarios = await Comentario.find({ usuarioId }).populate("usuarioLigado");
+    if (!comentarios.length) {
+      return res.status(404).json({ error: "El usuario no tiene comentarios" });
     }
-}
+    return res.status(200).json(comentarios);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 module.exports = {
-    createComentario,
-    getComentarios,
-    getComentarioById,
-    getComentariosByUsuarioId,
+  createComentario,
+  getComentarios,
+  getComentarioById,
+  getComentariosByUsuarioId,
 };
