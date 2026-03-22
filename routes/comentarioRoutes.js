@@ -7,4 +7,5 @@ router.post("/create", authService, ComentarioController.createComentario);
 router.get("/get", authService, ComentarioController.getComentarios);
 router.get("/get/:id", authService, ComentarioController.getComentarioById);
 router.get("/getU/:usuarioId", authService, ComentarioController.getComentariosByUsuarioId);
+router.get("/getL/:usuarioId", authService, ComentarioController.getComentariosLigadosByUsuarioId);
 module.exports = router;

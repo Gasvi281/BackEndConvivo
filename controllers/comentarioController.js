@@ -56,9 +56,23 @@ const getComentariosByUsuarioId = async (req, res) => {
   }
 };
 
+const getComentariosLigadosByUsuarioId = async (req,res) => {
+  try {
+    const { usuarioId } = req.params;
+    const comentarios = await Comentario.find({ usuarioLigado: usuarioId }).populate("usuarioId");
+    if (!comentarios.length) {
+      return res.status(404).json({ error: "El usuario no tiene comentarios" });
+    }
+    return res.status(200).json(comentarios);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+
 module.exports = {
   createComentario,
   getComentarios,
   getComentarioById,
   getComentariosByUsuarioId,
+  getComentariosLigadosByUsuarioId
 };
