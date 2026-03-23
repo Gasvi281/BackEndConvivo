@@ -12,7 +12,7 @@ const comentarioSchema = new Schema(
       required: true,
     },
     tipo: {
-      type: string,
+      type: String,
       enum: ['Comentario','Anuncio'],
       required: true
     },

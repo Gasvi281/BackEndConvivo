@@ -8,4 +8,5 @@ router.get("/get", authService, ComentarioController.getComentarios);
 router.get("/get/:id", authService, ComentarioController.getComentarioById);
 router.get("/getU/:usuarioId", authService, ComentarioController.getComentariosByUsuarioId);
 router.get("/getA/:conjuntoId", authService, ComentarioController.getAnunciosByConjuntoId);
+router.delete("/delete/:id", authService, ComentarioController.deleteComentario);
 module.exports = router;
