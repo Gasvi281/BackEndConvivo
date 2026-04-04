@@ -25,7 +25,7 @@ const createReserva = async (req, res) => {
                 { expiresIn: "1h" }
             )
     
-            const confirmLink = `http://localhost:4200/espacios/confirm?token=${tokenConfirm}`
+    const confirmLink = `http://localhost:4200/espacios/confirm?token=${tokenConfirm}`
     
     await enviarMailConfirm(usuario.correo, "Confirmacion Reserva", { confirmLink })
 
