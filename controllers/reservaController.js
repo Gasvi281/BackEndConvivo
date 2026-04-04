@@ -1,5 +1,7 @@
 const Reserva = require("../schemas/reserva");
 const Espacio = require("../schemas/espacio");
+const Usuario = require("../schemas/usuario");
+const { enviarMailConfirm } = require("../services/emailService");
 
 const createReserva = async (req, res) => {
   try {
@@ -13,6 +15,19 @@ const createReserva = async (req, res) => {
       horaFin,
       cantidadPersonas,
     });
+
+    const usuario = Usuario.findById(usuarioId);
+
+    const tokenConfirm = jwt.sign(
+                {
+                    id: reserva._id,
+                }, process.env.JWT_SECRET,
+                { expiresIn: "1h" }
+            )
+    
+            const confirmLink = `http://localhost:4200/espacios/confirm?token=${tokenConfirm}`
+    
+    await enviarMailConfirm(usuario.correo, "Confirmacion Reserva", { confirmLink })
 
     return res.status(201).json(reserva);
   } catch (error) {
@@ -128,6 +143,24 @@ const updateReserva = async (req, res) => {
   }
 };
 
+const activateReserva = async(req, res) => {
+  try {
+    const {token} = req.body
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const reserva = await Reserva.findById(decoded.id)
+    if(!reserva){
+      return res.status(404).json({ error: "Reserva no encontrada" });
+    }
+
+    reserva.estado = 'Activo'
+    await reserva.save()
+
+    return res.status(200).json(reserva);
+  } catch (error) {
+    return res.status(400).json({ error: "Token invalido o expirado" });
+  }
+}
+
 module.exports = {
   createReserva,
   getReservas,
@@ -136,4 +169,5 @@ module.exports = {
   getReservasPasadas,
   deleteReserva,
   updateReserva,
+  activateReserva
 };
