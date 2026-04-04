@@ -11,6 +11,11 @@ const comentarioSchema = new Schema(
       type: String,
       required: true,
     },
+    tipo: {
+      type: String,
+      enum: ['Comentario','Anuncio'],
+      required: true
+    },
     usuarioId: {
       type: Schema.Types.ObjectId,
       ref: 'Usuario',
