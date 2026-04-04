@@ -2,6 +2,8 @@ const Reserva = require("../schemas/reserva");
 const Espacio = require("../schemas/espacio");
 const Usuario = require("../schemas/usuario");
 const { enviarMailConfirm } = require("../services/emailService");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 const createReserva = async (req, res) => {
   try {
@@ -16,7 +18,7 @@ const createReserva = async (req, res) => {
       cantidadPersonas,
     });
 
-    const usuario = Usuario.findById(usuarioId);
+    const usuario = await Usuario.findById(usuarioId);
 
     const tokenConfirm = jwt.sign(
                 {
@@ -25,7 +27,7 @@ const createReserva = async (req, res) => {
                 { expiresIn: "1h" }
             )
     
-    const confirmLink = `http://localhost:4200/espacios/confirm?token=${tokenConfirm}`
+    const confirmLink = `http://localhost:4200/confirmar/confirm?token=${tokenConfirm}`
     
     await enviarMailConfirm(usuario.correo, "Confirmacion Reserva", { confirmLink })
 
