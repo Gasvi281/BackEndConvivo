@@ -40,7 +40,7 @@ const reservaSchema = new Schema(
     estado: {
       type: String,
       required: true,
-      default: 'Activo',
+      default: 'Inactivo',
     },
   },
   {

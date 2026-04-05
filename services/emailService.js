@@ -29,4 +29,18 @@ const enviarMail = async(to, subject,templateData = {}) => {
 
 };
 
-module.exports = { enviarMail }
+const enviarMailConfirm = async(to, subject,templateData = {}) => {
+    const info = await transporter.sendMail({
+        from: `"Convivo" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        templateName: 'confirmEmail',
+        templateData
+    });
+
+    console.log("Correo enviado", info.messageId);
+    return info;
+
+};
+
+module.exports = { enviarMail , enviarMailConfirm}
