@@ -73,7 +73,7 @@ const validarToken = async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         return res.status(200).json({ valido: true, message: "Token autorizado" })
     } catch (error) {
-        return res.status(401).json({ valid: false, message: "Token expirado" })
+        return res.status(401).json({ valido: false, message: "Token expirado" })
     }
 }
 

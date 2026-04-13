@@ -28,6 +28,7 @@ app.use("/conjunto", ConjuntoRoutes);
 app.use("/espacio", EspacioRoutes)
 app.use("/reserva", ReservaRoutes)
 app.use("/comentario", ComentarioRoutes)
+app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 3000;
 

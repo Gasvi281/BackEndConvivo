@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const ReservaController = require("../controllers/reservaController");
+const authService = require("../services/authService")
 
-router.post("/create", ReservaController.createReserva);
-router.get("/get", ReservaController.getReservas);
-router.get("/get/:id", ReservaController.getReservaById);
-router.get("/getU/:usuarioId", ReservaController.getReservasByUsuarioId);
-router.get("/getP/:usuarioId", ReservaController.getReservasPasadas)
-router.delete("/delete/:id", ReservaController.deleteReserva);
-router.put("/update/:id", ReservaController.updateReserva)
+router.post("/create", authService, ReservaController.createReserva);
+router.get("/get", authService, ReservaController.getReservas);
+router.get("/get/:id", authService, ReservaController.getReservaById);
+router.get("/getU/:usuarioId", authService, ReservaController.getReservasByUsuarioId);
+router.get("/getP/:usuarioId", authService, ReservaController.getReservasPasadas)
+router.delete("/delete/:id", authService, ReservaController.deleteReserva);
+router.put("/update/:id", authService, ReservaController.updateReserva)
+router.patch("/confirm", ReservaController.activateReserva)
 module.exports = router;
