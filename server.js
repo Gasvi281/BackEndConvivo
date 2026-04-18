@@ -12,6 +12,7 @@ const ConjuntoRoutes = require("./routes/conjuntoRoutes");
 const EspacioRoutes = require("./routes/espacioRoutes")
 const ReservaRoutes = require("./routes/reservaRoutes")
 const ComentarioRoutes = require("./routes/comentarioRoutes")
+const PagoRoutes = require("./routes/pagoRoutes")
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/conjunto", ConjuntoRoutes);
 app.use("/espacio", EspacioRoutes)
 app.use("/reserva", ReservaRoutes)
 app.use("/comentario", ComentarioRoutes)
+app.use("/pago", PagoRoutes)
 app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 3000;
