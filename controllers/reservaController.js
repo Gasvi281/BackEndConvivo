@@ -172,4 +172,4 @@ module.exports = {
   deleteReserva,
   updateReserva,
   activateReserva
-};
+  };
