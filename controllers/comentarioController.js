@@ -10,8 +10,7 @@ const createComentario = async (req, res) => {
 
     const adjuntos = (req.files || []).map((file) => ({
       nombre_original: file.originalname,
-      nombre_guardado: file.filename,
-      url: `/uploads/comentarios/${file.filename}`,
+      url: file.path,
       tipo: file.mimetype,
       tamaño: file.size,
     }));
