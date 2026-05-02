@@ -10,7 +10,7 @@ const detallePagoSchema = new Schema(
     },
     estado: {
       type: String,
-      enum: ['Pending', 'Paid', 'Overdue'],
+      enum: ['Pending', 'Paid', 'Failed', 'Overdue', 'Refunded'],
       default: 'Pending',
       required: true,
     },

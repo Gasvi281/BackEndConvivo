@@ -265,10 +265,227 @@ const pagarSimulado = async (req, res) => {
   }
 };
 
+/**
+ * Create a PaymentIntent for Stripe payment
+ * POST /pago/:pagoId/create-payment-intent
+ */
+const createPaymentIntent = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId } = req.params;
+    const vecinoId = req.cuenta.id;
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === vecinoId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: user must not have already paid
+    if (detalle.estado === 'Paid') {
+      return res.status(400).json({ error: 'Este pago ya fue procesado' });
+    }
+
+    // Validate: payment must not have failed previously
+    if (detalle.estado === 'Failed' || detalle.estado === 'Refunded') {
+      return res.status(400).json({ error: 'Este pago no puede ser procesado' });
+    }
+
+    // Create PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(pago.monto * 100), // Convert to cents
+      currency: 'cop', // Colombian Peso
+      description: `Pago: ${pago.descripcion}`,
+      metadata: {
+        pagoId: pagoId.toString(),
+        vecinoId: vecinoId,
+        detalleIndex: detalleIndex,
+      },
+    });
+
+    // Store PaymentIntent ID in the database
+    pago.detalles[detalleIndex].stripePaymentIntentId = paymentIntent.id;
+    await pago.save();
+
+    return res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Confirm a payment after Stripe processes the card
+ * PATCH /pago/:pagoId/confirm-payment
+ */
+const confirmPayment = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId } = req.params;
+    const { paymentIntentId } = req.body;
+    const vecinoId = req.cuenta.id;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({ error: 'paymentIntentId es requerido' });
+    }
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === vecinoId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: user must not have already paid
+    if (detalle.estado === 'Paid') {
+      return res.status(400).json({ error: 'Este pago ya fue procesado' });
+    }
+
+    // Retrieve PaymentIntent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status === 'succeeded') {
+      // Payment successful - find the charge ID
+      const chargeId = paymentIntent.charges?.data?.[0]?.id;
+
+      // Update the payment detail
+      pago.detalles[detalleIndex].estado = 'Paid';
+      pago.detalles[detalleIndex].fechaPago = new Date();
+      pago.detalles[detalleIndex].montoReal = pago.monto;
+      pago.detalles[detalleIndex].isSimulated = false;
+      pago.detalles[detalleIndex].stripeChargeId = chargeId || null;
+
+      await pago.save();
+      await pago.populate('created_by conjuntoId detalles.usuarioId');
+
+      return res.status(200).json({
+        message: 'Pago procesado correctamente',
+        pago: pago,
+      });
+    } else if (paymentIntent.status === 'requires_action') {
+      // Payment requires 3D Secure or other authentication
+      return res.status(402).json({
+        error: 'El pago requiere autenticación adicional',
+        clientSecret: paymentIntent.client_secret,
+      });
+    } else if (paymentIntent.status === 'requires_payment_method') {
+      // Payment failed or requires a different payment method
+      pago.detalles[detalleIndex].stripeError = 'Método de pago rechazado';
+      await pago.save();
+
+      return res.status(400).json({
+        error: 'El método de pago fue rechazado',
+      });
+    } else {
+      // Other status
+      return res.status(400).json({
+        error: `Estado de pago no esperado: ${paymentIntent.status}`,
+      });
+    }
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Refund a payment (admin only)
+ * PATCH /pago/:pagoId/refund/:usuarioId
+ */
+const refundPayment = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId, usuarioId } = req.params;
+    const { motivo } = req.body;
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === usuarioId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: must have a charge ID to refund
+    if (!detalle.stripeChargeId) {
+      return res.status(400).json({ error: 'No hay cargo de Stripe para reembolsar' });
+    }
+
+    // Validate: must be in Paid state
+    if (detalle.estado !== 'Paid') {
+      return res.status(400).json({ error: 'Solo se pueden reembolsar pagos completados' });
+    }
+
+    // Create refund via Stripe
+    const refund = await stripe.refunds.create({
+      charge: detalle.stripeChargeId,
+      reason: 'requested_by_merchant',
+      metadata: {
+        pagoId: pagoId.toString(),
+        usuarioId: usuarioId,
+        motivo: motivo || 'Reembolso solicitado',
+      },
+    });
+
+    // Update the payment detail
+    pago.detalles[detalleIndex].estado = 'Refunded';
+    pago.detalles[detalleIndex].motivoRechazo = motivo || 'Reembolso solicitado';
+
+    await pago.save();
+    await pago.populate('created_by conjuntoId detalles.usuarioId');
+
+    return res.status(200).json({
+      message: 'Reembolso procesado correctamente',
+      refundId: refund.id,
+      pago: pago,
+    });
+  } catch (error) {
+    console.error('Error refunding payment:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createPago,
   listPagosByConjunto,
   getPagoDetail,
   getMisPagos,
   pagarSimulado,
+  createPaymentIntent,
+  confirmPayment,
+  refundPayment,
 };
