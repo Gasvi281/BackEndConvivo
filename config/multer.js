@@ -1,6 +1,5 @@
 const multer = require('multer');
 const path   = require('path');
-const { v4: uuidv4 } = require('uuid');
 const { CloudinaryStorage } = require('multer-storage-cloudinary')
 const cloudinary = require('./cloudinary')
 
