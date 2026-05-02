@@ -3,6 +3,90 @@ const Usuario = require('../schemas/usuario');
 const Conjunto = require('../schemas/conjunto');
 
 /**
+ * Translate Stripe error messages from English to Spanish
+ */
+const translateStripeError = (errorMessage) => {
+  if (!errorMessage) return null;
+
+  const translations = {
+    // Insufficient funds
+    'insufficient_funds': 'Tu tarjeta no tiene fondos suficientes.',
+    'Your card has insufficient funds': 'Tu tarjeta no tiene fondos suficientes.',
+    'insufficient funds': 'Tu tarjeta no tiene fondos suficientes.',
+    
+    // Card declined (generic)
+    'card_declined': 'Tu tarjeta fue rechazada.',
+    'Your card was declined': 'Tu tarjeta fue rechazada.',
+    'Your card was declined.': 'Tu tarjeta fue rechazada.',
+    'card declined': 'Tu tarjeta fue rechazada.',
+    'generic_decline': 'Tu tarjeta fue rechazada por tu banco.',
+    'do_not_honor': 'Tu banco rechazó el pago.',
+    
+    // Expiration
+    'expired_card': 'Tu tarjeta ha expirado.',
+    'Your card has expired': 'Tu tarjeta ha expirado.',
+    'Your card\'s expiration year is invalid': 'El año de vencimiento de tu tarjeta es inválido.',
+    'Your card\'s expiration month is invalid': 'El mes de vencimiento de tu tarjeta es inválido.',
+    'expired card': 'Tu tarjeta ha expirado.',
+    
+    // CVC
+    'incorrect_cvc': 'El código de seguridad (CVC) de tu tarjeta es incorrecto.',
+    'Your card\'s security code is invalid': 'El código de seguridad de tu tarjeta es inválido.',
+    'incorrect cvc': 'El código de seguridad de tu tarjeta es incorrecto.',
+    'online_or_cvv_required': 'Se requiere CVV para esta transacción.',
+    
+    // Card number
+    'invalid_number': 'El número de tu tarjeta es inválido.',
+    'Your card number is invalid': 'El número de tu tarjeta es inválido.',
+    'invalid card number': 'El número de tu tarjeta es inválido.',
+    
+    // Processing
+    'processing_error': 'Error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'An error occurred while processing your card': 'Ocurrió un error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'processing error': 'Error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'unable_to_process': 'No se pudo procesar el pago. Por favor intenta de nuevo.',
+    
+    // Card type/support
+    'card_not_supported': 'Esta tarjeta no es soportada.',
+    'not_permitted': 'Esta tarjeta no está autorizada para este tipo de transacción.',
+    
+    // Lost/stolen/restricted
+    'lost_card': 'La tarjeta fue reportada como perdida.',
+    'stolen_card': 'La tarjeta fue reportada como robada.',
+    'restricted_card': 'Esta tarjeta tiene restricciones.',
+    'pickup_card': 'Contacta a tu banco inmediatamente.',
+    
+    // Rate limiting and velocity
+    'card_velocity_exceeded': 'Demasiados intentos con esta tarjeta. Intenta más tarde.',
+    'rate_limit': 'Límite de intentos excedido. Intenta más tarde.',
+    'try_again_later': 'Intenta más tarde.',
+    
+    // Duplicate and other
+    'duplicate_transaction': 'Esta transacción ya fue procesada.',
+    'fraud_check': 'La transacción fue rechazada por seguridad.',
+    'authentication_required': 'Se requiere autenticación adicional.',
+  };
+
+  // Check for exact matches first
+  for (const [key, value] of Object.entries(translations)) {
+    if (errorMessage === key || errorMessage === `${key}.`) {
+      return value;
+    }
+  }
+
+  // Check for partial/case-insensitive matches
+  const lowerMessage = errorMessage.toLowerCase();
+  for (const [key, value] of Object.entries(translations)) {
+    if (lowerMessage.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  // If no translation found, return original
+  return errorMessage;
+};
+
+/**
  * Create a new payment for all Vecinos in a Conjunto
  * POST /pago/crear
  */
@@ -368,17 +452,21 @@ const confirmPayment = async (req, res) => {
 
     // Retrieve PaymentIntent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const lastPaymentError = paymentIntent.last_payment_error;
+    const lastPaymentMessage = lastPaymentError?.message || null;
+    const translatedMessage = translateStripeError(lastPaymentMessage);
 
     if (paymentIntent.status === 'succeeded') {
       // Payment successful - find the charge ID
-      const chargeId = paymentIntent.charges?.data?.[0]?.id;
+      const chargeId = paymentIntent.charges?.data?.[0]?.id || null;
 
       // Update the payment detail
       pago.detalles[detalleIndex].estado = 'Paid';
       pago.detalles[detalleIndex].fechaPago = new Date();
       pago.detalles[detalleIndex].montoReal = pago.monto;
       pago.detalles[detalleIndex].isSimulated = false;
-      pago.detalles[detalleIndex].stripeChargeId = chargeId || null;
+      pago.detalles[detalleIndex].stripeChargeId = chargeId;
+      pago.detalles[detalleIndex].stripeError = null;
 
       await pago.save();
       await pago.populate('created_by conjuntoId detalles.usuarioId');
@@ -392,19 +480,29 @@ const confirmPayment = async (req, res) => {
       return res.status(402).json({
         error: 'El pago requiere autenticación adicional',
         clientSecret: paymentIntent.client_secret,
+        stripeError: translatedMessage,
       });
     } else if (paymentIntent.status === 'requires_payment_method') {
       // Payment failed or requires a different payment method
-      pago.detalles[detalleIndex].stripeError = 'Método de pago rechazado';
+      const lastMsg = translatedMessage || 'Método de pago rechazado';
+      pago.detalles[detalleIndex].stripeError = lastMsg;
       await pago.save();
 
       return res.status(400).json({
         error: 'El método de pago fue rechazado',
+        stripeError: lastMsg,
+        declineCode: lastPaymentError?.decline_code || null,
+        code: lastPaymentError?.code || null,
       });
     } else {
       // Other status
+      const lastMsg = translatedMessage || `Estado de pago no esperado: ${paymentIntent.status}`;
+      pago.detalles[detalleIndex].stripeError = lastMsg;
+      await pago.save();
+
       return res.status(400).json({
         error: `Estado de pago no esperado: ${paymentIntent.status}`,
+        stripeError: lastMsg,
       });
     }
   } catch (error) {
