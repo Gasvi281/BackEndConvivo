@@ -26,6 +26,13 @@ router.get(
   PagoController.getMisPagos
 );
 
+// Simulated payment endpoint - Vecino endpoint
+router.patch(
+  '/:pagoId/pagar-simulado',
+  authService,
+  PagoController.pagarSimulado
+);
+
 // Admin endpoint - Get single payment detail (must be last to avoid catching other routes)
 router.get(
   '/:pagoId',
