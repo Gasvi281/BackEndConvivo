@@ -212,9 +212,63 @@ const getMisPagos = async (req, res) => {
   }
 };
 
+/**
+ * Process a simulated payment for a Vecino
+ * PATCH /pago/:pagoId/pagar-simulado
+ */
+const pagarSimulado = async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const { montoReal } = req.body;
+    const vecinoId = req.cuenta.id;
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === vecinoId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: user must not have already paid
+    if (detalle.estado === 'Paid') {
+      return res.status(400).json({ error: 'Este pago ya fue procesado' });
+    }
+
+    // Update the payment detail (preserve all fields including usuarioId)
+    pago.detalles[detalleIndex].estado = 'Paid';
+    pago.detalles[detalleIndex].fechaPago = new Date();
+    pago.detalles[detalleIndex].montoReal = montoReal || pago.monto;
+    pago.detalles[detalleIndex].isSimulated = true;
+
+    // Save the updated payment
+    await pago.save();
+
+    // Populate and return
+    await pago.populate('created_by conjuntoId detalles.usuarioId');
+
+    return res.status(200).json({
+      message: 'Pago procesado correctamente',
+      pago: pago
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createPago,
   listPagosByConjunto,
   getPagoDetail,
   getMisPagos,
+  pagarSimulado,
 };
