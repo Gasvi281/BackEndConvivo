@@ -33,6 +33,27 @@ router.patch(
   PagoController.pagarSimulado
 );
 
+// Stripe endpoints - Vecino
+router.post(
+  '/:pagoId/create-payment-intent',
+  authService,
+  PagoController.createPaymentIntent
+);
+
+router.patch(
+  '/:pagoId/confirm-payment',
+  authService,
+  PagoController.confirmPayment
+);
+
+// Refund endpoint - Admin only
+router.patch(
+  '/:pagoId/refund/:usuarioId',
+  authService,
+  rolService(['administrador']),
+  PagoController.refundPayment
+);
+
 // Admin endpoint - Get single payment detail (must be last to avoid catching other routes)
 router.get(
   '/:pagoId',

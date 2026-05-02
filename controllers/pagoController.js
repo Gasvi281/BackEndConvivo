@@ -3,6 +3,90 @@ const Usuario = require('../schemas/usuario');
 const Conjunto = require('../schemas/conjunto');
 
 /**
+ * Translate Stripe error messages from English to Spanish
+ */
+const translateStripeError = (errorMessage) => {
+  if (!errorMessage) return null;
+
+  const translations = {
+    // Insufficient funds
+    'insufficient_funds': 'Tu tarjeta no tiene fondos suficientes.',
+    'Your card has insufficient funds': 'Tu tarjeta no tiene fondos suficientes.',
+    'insufficient funds': 'Tu tarjeta no tiene fondos suficientes.',
+    
+    // Card declined (generic)
+    'card_declined': 'Tu tarjeta fue rechazada.',
+    'Your card was declined': 'Tu tarjeta fue rechazada.',
+    'Your card was declined.': 'Tu tarjeta fue rechazada.',
+    'card declined': 'Tu tarjeta fue rechazada.',
+    'generic_decline': 'Tu tarjeta fue rechazada por tu banco.',
+    'do_not_honor': 'Tu banco rechazó el pago.',
+    
+    // Expiration
+    'expired_card': 'Tu tarjeta ha expirado.',
+    'Your card has expired': 'Tu tarjeta ha expirado.',
+    'Your card\'s expiration year is invalid': 'El año de vencimiento de tu tarjeta es inválido.',
+    'Your card\'s expiration month is invalid': 'El mes de vencimiento de tu tarjeta es inválido.',
+    'expired card': 'Tu tarjeta ha expirado.',
+    
+    // CVC
+    'incorrect_cvc': 'El código de seguridad (CVC) de tu tarjeta es incorrecto.',
+    'Your card\'s security code is invalid': 'El código de seguridad de tu tarjeta es inválido.',
+    'incorrect cvc': 'El código de seguridad de tu tarjeta es incorrecto.',
+    'online_or_cvv_required': 'Se requiere CVV para esta transacción.',
+    
+    // Card number
+    'invalid_number': 'El número de tu tarjeta es inválido.',
+    'Your card number is invalid': 'El número de tu tarjeta es inválido.',
+    'invalid card number': 'El número de tu tarjeta es inválido.',
+    
+    // Processing
+    'processing_error': 'Error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'An error occurred while processing your card': 'Ocurrió un error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'processing error': 'Error al procesar tu tarjeta. Por favor intenta de nuevo.',
+    'unable_to_process': 'No se pudo procesar el pago. Por favor intenta de nuevo.',
+    
+    // Card type/support
+    'card_not_supported': 'Esta tarjeta no es soportada.',
+    'not_permitted': 'Esta tarjeta no está autorizada para este tipo de transacción.',
+    
+    // Lost/stolen/restricted
+    'lost_card': 'La tarjeta fue reportada como perdida.',
+    'stolen_card': 'La tarjeta fue reportada como robada.',
+    'restricted_card': 'Esta tarjeta tiene restricciones.',
+    'pickup_card': 'Contacta a tu banco inmediatamente.',
+    
+    // Rate limiting and velocity
+    'card_velocity_exceeded': 'Demasiados intentos con esta tarjeta. Intenta más tarde.',
+    'rate_limit': 'Límite de intentos excedido. Intenta más tarde.',
+    'try_again_later': 'Intenta más tarde.',
+    
+    // Duplicate and other
+    'duplicate_transaction': 'Esta transacción ya fue procesada.',
+    'fraud_check': 'La transacción fue rechazada por seguridad.',
+    'authentication_required': 'Se requiere autenticación adicional.',
+  };
+
+  // Check for exact matches first
+  for (const [key, value] of Object.entries(translations)) {
+    if (errorMessage === key || errorMessage === `${key}.`) {
+      return value;
+    }
+  }
+
+  // Check for partial/case-insensitive matches
+  const lowerMessage = errorMessage.toLowerCase();
+  for (const [key, value] of Object.entries(translations)) {
+    if (lowerMessage.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  // If no translation found, return original
+  return errorMessage;
+};
+
+/**
  * Create a new payment for all Vecinos in a Conjunto
  * POST /pago/crear
  */
@@ -265,10 +349,241 @@ const pagarSimulado = async (req, res) => {
   }
 };
 
+/**
+ * Create a PaymentIntent for Stripe payment
+ * POST /pago/:pagoId/create-payment-intent
+ */
+const createPaymentIntent = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId } = req.params;
+    const vecinoId = req.cuenta.id;
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === vecinoId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: user must not have already paid
+    if (detalle.estado === 'Paid') {
+      return res.status(400).json({ error: 'Este pago ya fue procesado' });
+    }
+
+    // Validate: payment must not have failed previously
+    if (detalle.estado === 'Failed' || detalle.estado === 'Refunded') {
+      return res.status(400).json({ error: 'Este pago no puede ser procesado' });
+    }
+
+    // Create PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(pago.monto * 100), // Convert to cents
+      currency: 'cop', // Colombian Peso
+      description: `Pago: ${pago.descripcion}`,
+      metadata: {
+        pagoId: pagoId.toString(),
+        vecinoId: vecinoId,
+        detalleIndex: detalleIndex,
+      },
+    });
+
+    // Store PaymentIntent ID in the database
+    pago.detalles[detalleIndex].stripePaymentIntentId = paymentIntent.id;
+    await pago.save();
+
+    return res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Confirm a payment after Stripe processes the card
+ * PATCH /pago/:pagoId/confirm-payment
+ */
+const confirmPayment = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId } = req.params;
+    const { paymentIntentId } = req.body;
+    const vecinoId = req.cuenta.id;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({ error: 'paymentIntentId es requerido' });
+    }
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === vecinoId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: user must not have already paid
+    if (detalle.estado === 'Paid') {
+      return res.status(400).json({ error: 'Este pago ya fue procesado' });
+    }
+
+    // Retrieve PaymentIntent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const lastPaymentError = paymentIntent.last_payment_error;
+    const lastPaymentMessage = lastPaymentError?.message || null;
+    const translatedMessage = translateStripeError(lastPaymentMessage);
+
+    if (paymentIntent.status === 'succeeded') {
+      // Payment successful - find the charge ID
+      const chargeId = paymentIntent.charges?.data?.[0]?.id || null;
+
+      // Update the payment detail
+      pago.detalles[detalleIndex].estado = 'Paid';
+      pago.detalles[detalleIndex].fechaPago = new Date();
+      pago.detalles[detalleIndex].montoReal = pago.monto;
+      pago.detalles[detalleIndex].isSimulated = false;
+      pago.detalles[detalleIndex].stripeChargeId = chargeId;
+      pago.detalles[detalleIndex].stripeError = null;
+
+      await pago.save();
+      await pago.populate('created_by conjuntoId detalles.usuarioId');
+
+      return res.status(200).json({
+        message: 'Pago procesado correctamente',
+        pago: pago,
+      });
+    } else if (paymentIntent.status === 'requires_action') {
+      // Payment requires 3D Secure or other authentication
+      return res.status(402).json({
+        error: 'El pago requiere autenticación adicional',
+        clientSecret: paymentIntent.client_secret,
+        stripeError: translatedMessage,
+      });
+    } else if (paymentIntent.status === 'requires_payment_method') {
+      // Payment failed or requires a different payment method
+      const lastMsg = translatedMessage || 'Método de pago rechazado';
+      pago.detalles[detalleIndex].stripeError = lastMsg;
+      await pago.save();
+
+      return res.status(400).json({
+        error: 'El método de pago fue rechazado',
+        stripeError: lastMsg,
+        declineCode: lastPaymentError?.decline_code || null,
+        code: lastPaymentError?.code || null,
+      });
+    } else {
+      // Other status
+      const lastMsg = translatedMessage || `Estado de pago no esperado: ${paymentIntent.status}`;
+      pago.detalles[detalleIndex].stripeError = lastMsg;
+      await pago.save();
+
+      return res.status(400).json({
+        error: `Estado de pago no esperado: ${paymentIntent.status}`,
+        stripeError: lastMsg,
+      });
+    }
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Refund a payment (admin only)
+ * PATCH /pago/:pagoId/refund/:usuarioId
+ */
+const refundPayment = async (req, res) => {
+  try {
+    const stripe = require('../config/stripe');
+    const { pagoId, usuarioId } = req.params;
+    const { motivo } = req.body;
+
+    // Find payment
+    const pago = await Pago.findById(pagoId);
+    if (!pago) {
+      return res.status(404).json({ error: 'Pago no encontrado' });
+    }
+
+    // Find the user's detail in the payment
+    const detalleIndex = pago.detalles.findIndex(
+      (d) => d.usuarioId.toString() === usuarioId
+    );
+
+    if (detalleIndex === -1) {
+      return res.status(400).json({ error: 'Usuario no encontrado en este pago' });
+    }
+
+    const detalle = pago.detalles[detalleIndex];
+
+    // Validate: must have a charge ID to refund
+    if (!detalle.stripeChargeId) {
+      return res.status(400).json({ error: 'No hay cargo de Stripe para reembolsar' });
+    }
+
+    // Validate: must be in Paid state
+    if (detalle.estado !== 'Paid') {
+      return res.status(400).json({ error: 'Solo se pueden reembolsar pagos completados' });
+    }
+
+    // Create refund via Stripe
+    const refund = await stripe.refunds.create({
+      charge: detalle.stripeChargeId,
+      reason: 'requested_by_merchant',
+      metadata: {
+        pagoId: pagoId.toString(),
+        usuarioId: usuarioId,
+        motivo: motivo || 'Reembolso solicitado',
+      },
+    });
+
+    // Update the payment detail
+    pago.detalles[detalleIndex].estado = 'Refunded';
+    pago.detalles[detalleIndex].motivoRechazo = motivo || 'Reembolso solicitado';
+
+    await pago.save();
+    await pago.populate('created_by conjuntoId detalles.usuarioId');
+
+    return res.status(200).json({
+      message: 'Reembolso procesado correctamente',
+      refundId: refund.id,
+      pago: pago,
+    });
+  } catch (error) {
+    console.error('Error refunding payment:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createPago,
   listPagosByConjunto,
   getPagoDetail,
   getMisPagos,
   pagarSimulado,
+  createPaymentIntent,
+  confirmPayment,
+  refundPayment,
 };

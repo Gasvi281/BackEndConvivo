@@ -13,6 +13,7 @@ const EspacioRoutes = require("./routes/espacioRoutes")
 const ReservaRoutes = require("./routes/reservaRoutes")
 const ComentarioRoutes = require("./routes/comentarioRoutes")
 const PagoRoutes = require("./routes/pagoRoutes")
+const WebhookRoutes = require("./routes/webhookRoutes")
 
 const app = express();
 
@@ -21,6 +22,11 @@ connectDB();
 app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
+
+// Webhook routes MUST come before bodyParser.json() to get raw body
+app.use("/webhook", WebhookRoutes);
+
+// All other routes use bodyParser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use("/usuario", UsuarioRoutes);
